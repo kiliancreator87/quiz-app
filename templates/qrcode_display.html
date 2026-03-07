@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - QR Code</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .qr-container {
+            text-align: center;
+        }
+        .qr-container h1 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+        #qrcode {
+            max-width: 500px;
+            width: 80vw;
+            height: auto;
+            margin: 0 auto;
+        }
+        .spieler-info {
+            font-size: 2rem;
+            margin-top: 2rem;
+            color: #f0c040;
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <h1 class="title">SCANNE ZUM MITSPIELEN</h1>
+        <img id="qrcode" src="" alt="QR Code">
+        <div class="spieler-info">
+            <span id="count">{{ spieler_count }}</span> Spieler bereit
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        async function loadQRCode() {
+            const response = await fetch('/api/qrcode');
+            const data = await response.json();
+            document.getElementById('qrcode').src = data.qrcode;
+        }
+
+        socket.on('spieler_update', (data) => {
+            document.getElementById('count').textContent = data.count;
+        });
+
+        socket.on('reset', () => {
+            location.reload();
+        });
+
+        loadQRCode();
+    </script>
+</body>
+</html>

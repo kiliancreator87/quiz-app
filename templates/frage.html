@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - Frage {{ frage_nr }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (frage_nr / gesamt * 100) }}%"></div>
+        </div>
+        <div class="frage-nr">Frage {{ frage_nr }} / {{ gesamt }}</div>
+        
+        <div class="card" id="frage-card">
+            <h2 class="frage-text">{{ frage.frage }}</h2>
+            <form id="antwort-form">
+                {% for antwort in frage.antworten %}
+                <label class="radio-option">
+                    <input type="radio" name="antwort" value="{{ antwort }}" required>
+                    <span>{{ antwort }}</span>
+                </label>
+                {% endfor %}
+                <button type="submit" class="btn-primary">Antwort absenden</button>
+            </form>
+        </div>
+
+        <div class="card feedback" id="feedback" style="display: none;">
+            <h2 id="feedback-title"></h2>
+            <p id="feedback-text"></p>
+            <div class="waiting">
+                <p>Warte auf andere Spieler...</p>
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const form = document.getElementById('antwort-form');
+        const frageCard = document.getElementById('frage-card');
+        const feedbackCard = document.getElementById('feedback');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('spieler_name', localStorage.getItem('spieler_name') || prompt('Dein Name:'));
+            formData.append('frage_nr', {{ frage_nr - 1 }});
+            
+            localStorage.setItem('spieler_name', formData.get('spieler_name'));
+            
+            const response = await fetch('/antworten', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            frageCard.style.display = 'none';
+            feedbackCard.style.display = 'block';
+            
+            if (result.richtig) {
+                feedbackCard.classList.add('correct');
+                document.getElementById('feedback-title').textContent = '✓ Richtig!';
+                document.getElementById('feedback-text').textContent = '';
+            } else {
+                feedbackCard.classList.add('incorrect');
+                document.getElementById('feedback-title').textContent = '✗ Falsch';
+                document.getElementById('feedback-text').textContent = 'Richtige Antwort: ' + result.korrekte_antwort;
+            }
+        });
+
+        socket.on('neue_frage', () => {
+            window.location.reload();
+        });
+
+        socket.on('spiel_ende', () => {
+            window.location.href = '/ergebnis';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - Warteraum</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">WARTERAUM</h1>
+        <div class="card">
+            <div class="spieler-count">
+                <span id="count">{{ spieler_count }}</span>
+                <p>Spieler bereit</p>
+            </div>
+            <button id="start-btn" class="btn-primary">Spiel starten</button>
+            <p class="hint">Warte bis alle Spieler beigetreten sind</p>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        socket.on('spieler_update', (data) => {
+            document.getElementById('count').textContent = data.count;
+        });
+
+        socket.on('spiel_gestartet', (data) => {
+            window.location.href = '/frage';
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            socket.emit('spiel_starten');
+        });
+    </script>
+</body>
+</html>

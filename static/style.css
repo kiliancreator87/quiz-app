@@ -1,0 +1,303 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #0d0d14;
+    color: #ffffff;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 3rem;
+    text-align: center;
+    color: #f0c040;
+    margin-bottom: 2rem;
+    letter-spacing: 2px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.card {
+    background-color: #16161f;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+h2 {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.8rem;
+    color: #f0c040;
+    margin-bottom: 1rem;
+}
+
+p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    border: 2px solid #2a2a35;
+    border-radius: 8px;
+    background-color: #0d0d14;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    font-family: 'DM Sans', sans-serif;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #f0c040;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    background-color: #f0c040;
+    color: #0d0d14;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #ffd666;
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.spieler-count {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.spieler-count span {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 5rem;
+    color: #f0c040;
+    display: block;
+}
+
+.spieler-count p {
+    font-size: 1.2rem;
+    color: #888;
+    margin: 0;
+}
+
+.hint {
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #16161f;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #f0c040;
+    transition: width 0.3s ease;
+}
+
+.frage-nr {
+    text-align: center;
+    color: #f0c040;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.frage-text {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    line-height: 1.4;
+}
+
+.radio-option {
+    display: block;
+    background-color: #0d0d14;
+    border: 2px solid #2a2a35;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.radio-option:hover {
+    border-color: #f0c040;
+    background-color: #16161f;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 1rem;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: #f0c040;
+}
+
+.radio-option span {
+    font-size: 1.1rem;
+    flex: 1;
+}
+
+.radio-option input[type="radio"]:checked + span {
+    color: #f0c040;
+    font-weight: 700;
+}
+
+.feedback {
+    text-align: center;
+}
+
+.feedback.correct {
+    border: 3px solid #4caf50;
+}
+
+.feedback.incorrect {
+    border: 3px solid #f44336;
+}
+
+.feedback h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.feedback.correct h2 {
+    color: #4caf50;
+}
+
+.feedback.incorrect h2 {
+    color: #f44336;
+}
+
+.waiting {
+    margin-top: 2rem;
+    color: #888;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #2a2a35;
+    border-top-color: #f0c040;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.countdown {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #f0c040;
+    margin-bottom: 2rem;
+}
+
+.countdown span {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2rem;
+}
+
+.rangliste {
+    padding: 1rem;
+}
+
+.rangliste-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: #0d0d14;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 2px solid #2a2a35;
+}
+
+.rangliste-item.winner {
+    border-color: #f0c040;
+    background-color: #1a1a0f;
+}
+
+.rang {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2rem;
+    color: #f0c040;
+    width: 50px;
+    text-align: center;
+}
+
+.spieler-info {
+    flex: 1;
+    padding: 0 1rem;
+}
+
+.name {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+.stats {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.punkte {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.5rem;
+    color: #f0c040;
+}
+
+@media (max-width: 480px) {
+    .title {
+        font-size: 2rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+    
+    .frage-text {
+        font-size: 1.2rem;
+    }
+    
+    .radio-option {
+        padding: 0.75rem 1rem;
+        min-height: 50px;
+    }
+}

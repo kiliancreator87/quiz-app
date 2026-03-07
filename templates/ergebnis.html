@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - Ergebnis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">RANGLISTE</h1>
+        
+        <div class="countdown">
+            Neues Spiel in <span id="countdown">60</span> Sekunden
+        </div>
+
+        <div class="card rangliste">
+            {% for spieler in rangliste %}
+            <div class="rangliste-item {% if loop.index == 1 %}winner{% endif %}">
+                <div class="rang">{{ loop.index }}</div>
+                <div class="spieler-info">
+                    <div class="name">{{ spieler[0] }}</div>
+                    <div class="stats">{{ spieler[1] }} / {{ spieler[2] }} richtig</div>
+                </div>
+                <div class="punkte">{{ spieler[1] }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let countdownValue = 60;
+        const countdownEl = document.getElementById('countdown');
+
+        socket.on('countdown_start', (data) => {
+            countdownValue = data.sekunden;
+            const interval = setInterval(() => {
+                countdownValue--;
+                countdownEl.textContent = countdownValue;
+                if (countdownValue <= 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        });
+
+        socket.on('reset', () => {
+            window.location.href = '/';
+        });
+
+        // Countdown starten
+        const interval = setInterval(() => {
+            countdownValue--;
+            countdownEl.textContent = countdownValue;
+            if (countdownValue <= 0) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

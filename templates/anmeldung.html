@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - Anmeldung</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">QUIZ SPIEL</h1>
+        <div class="card">
+            <h2>Willkommen!</h2>
+            <p>Gib deinen Namen ein um mitzuspielen:</p>
+            <form action="/anmelden" method="POST">
+                <input type="text" name="name" placeholder="Dein Name" required autofocus>
+                <button type="submit" class="btn-primary">Beitreten</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
