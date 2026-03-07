@@ -48,9 +48,21 @@ spiel_status = {
     "spieler_count": 0
 }
 
-# Datenbank initialisieren
-def init_db():
-    conn = sqlite3.connect('quiz.db')
+# Datenbank-Pfad (In-Memory für Railway, File für lokal)
+DB_PATH = ':memory:' if IS_RAILWAY else 'quiz.db'
+db_conn = None
+
+def get_db():
+    global db_conn
+    if IS_RAILWAY:
+        if db_conn is None:
+            db_conn = sqlite3.connect(':memory:', check_same_thread=False)
+            init_db_tables(db_conn)
+        return db_conn
+    else:
+        return sqlite3.connect('quiz.db')
+
+def init_db_tables(conn):
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS spieler
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,37 +77,46 @@ def init_db():
                   zeitpunkt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   UNIQUE(spieler_name, frage_nr))''')
     conn.commit()
-    conn.close()
+
+# Datenbank initialisieren
+def init_db():
+    if not IS_RAILWAY:
+        conn = get_db()
+        init_db_tables(conn)
+        conn.close()
 
 def reset_db():
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute('DELETE FROM spieler')
     c.execute('DELETE FROM antworten')
     conn.commit()
-    conn.close()
+    if not IS_RAILWAY:
+        conn.close()
     spiel_status["phase"] = "warten"
     spiel_status["aktuelle_frage"] = 0
     spiel_status["spieler_count"] = 0
 
 def get_spieler_count():
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM spieler')
     count = c.fetchone()[0]
-    conn.close()
+    if not IS_RAILWAY:
+        conn.close()
     return count
 
 def get_antworten_count(frage_nr):
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM antworten WHERE frage_nr = ?', (frage_nr,))
     count = c.fetchone()[0]
-    conn.close()
+    if not IS_RAILWAY:
+        conn.close()
     return count
 
 def berechne_rangliste():
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     c.execute('''SELECT spieler_name, 
                         SUM(CASE WHEN richtig = 1 THEN 1 ELSE 0 END) as punkte,
@@ -104,7 +125,8 @@ def berechne_rangliste():
                  GROUP BY spieler_name 
                  ORDER BY punkte DESC, spieler_name ASC''')
     rangliste = c.fetchall()
-    conn.close()
+    if not IS_RAILWAY:
+        conn.close()
     return rangliste
 
 def spiele_video(video_datei):
@@ -139,7 +161,7 @@ def anmelden():
     if not name:
         return redirect(url_for('anmeldung'))
     
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     try:
         c.execute('INSERT INTO spieler (name) VALUES (?)', (name,))
@@ -149,7 +171,8 @@ def anmelden():
     except sqlite3.IntegrityError:
         pass
     finally:
-        conn.close()
+        if not IS_RAILWAY:
+            conn.close()
     
     return redirect(url_for('warten'))
 
@@ -185,17 +208,19 @@ def antworten():
     frage_data = FRAGEN[frage_nr]
     richtig = (antwort == frage_data["richtig"])
     
-    conn = sqlite3.connect('quiz.db')
+    conn = get_db()
     c = conn.cursor()
     try:
         c.execute('''INSERT INTO antworten (spieler_name, frage_nr, antwort, richtig)
                      VALUES (?, ?, ?, ?)''', (spieler_name, frage_nr, antwort, richtig))
         conn.commit()
     except sqlite3.IntegrityError:
-        conn.close()
+        if not IS_RAILWAY:
+            conn.close()
         return jsonify({'error': 'Bereits geantwortet'}), 400
     finally:
-        conn.close()
+        if not IS_RAILWAY:
+            conn.close()
     
     # Prüfen ob alle geantwortet haben
     antworten_count = get_antworten_count(frage_nr)
