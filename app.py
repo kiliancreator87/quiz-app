@@ -22,22 +22,34 @@ ERGEBNIS_ANZEIGE_SEKUNDEN = 60
 
 FRAGEN = [
     {
-        "video": "video1.mp4",
-        "frage": "Was ist die Hauptstadt von Deutschland?",
-        "antworten": ["Berlin", "München", "Hamburg", "Köln"],
-        "richtig": "Berlin"
+        "video": "oetscher.mp4",
+        "frage": "Welcher Berg ist das?",
+        "antworten": ["Ötscher", "Luxemburg", "Dachstein", "Bad Aussee"],
+        "richtig": "Ötscher"
     },
     {
-        "video": "video2.mp4",
-        "frage": "Wie viele Planeten hat unser Sonnensystem?",
-        "antworten": ["7", "8", "9", "10"],
-        "richtig": "8"
+        "video": "dachstein.mp4",
+        "frage": "Welcher Berg ist das?",
+        "antworten": ["Ötscher", "Luxemburg", "Dachstein", "Bad Aussee"],
+        "richtig": "Dachstein"
     },
     {
-        "video": "video3.mp4",
-        "frage": "Wer hat die Relativitätstheorie entwickelt?",
-        "antworten": ["Newton", "Einstein", "Galilei", "Hawking"],
-        "richtig": "Einstein"
+        "video": "schneeberg.mp4",
+        "frage": "Welcher Berg ist das?",
+        "antworten": ["Schneeberg", "Rax", "Hochschwab", "Grimming"],
+        "richtig": "Schneeberg"
+    },
+    {
+        "video": "grossglockner.mp4",
+        "frage": "Welcher Berg ist das?",
+        "antworten": ["Großglockner", "Wildspitze", "Watzmann", "Zugspitze"],
+        "richtig": "Großglockner"
+    },
+    {
+        "video": "traunstein.mp4",
+        "frage": "Welcher Berg ist das?",
+        "antworten": ["Traunstein", "Schafberg", "Feuerkogel", "Katrin"],
+        "richtig": "Traunstein"
     }
 ]
 
@@ -275,7 +287,11 @@ def ergebnis():
 @app.route('/qrcode_display')
 def qrcode_display():
     spieler_count = get_spieler_count()
-    return render_template('qrcode_display.html', spieler_count=spieler_count)
+    rangliste = berechne_rangliste() if spiel_status["phase"] == "ergebnis" else []
+    return render_template('qrcode_display.html', 
+                          spieler_count=spieler_count,
+                          rangliste=rangliste,
+                          phase=spiel_status["phase"])
 
 @app.route('/api/qrcode')
 def api_qrcode():
