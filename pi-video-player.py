@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Konfiguration
 QUIZ_APP_URL = os.environ.get('QUIZ_APP_URL', 'https://wetterpanorama-kahoot.up.railway.app')
-VIDEO_DIR = os.environ.get('VIDEO_DIR', '/home/pi/quiz-videos')
+VIDEO_DIR = os.environ.get('VIDEO_DIR', '/media/usb')
 FULLSCREEN = os.environ.get('FULLSCREEN', 'true').lower() == 'true'
 
 # SocketIO Client

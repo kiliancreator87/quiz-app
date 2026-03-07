@@ -3,6 +3,7 @@ import os
 import sqlite3
 import subprocess
 import time
+import random
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_socketio import SocketIO, emit
@@ -19,39 +20,80 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 PORT = int(os.environ.get("PORT", 8080))
 IS_RAILWAY = os.environ.get("RAILWAY_ENVIRONMENT") is not None
 ERGEBNIS_ANZEIGE_SEKUNDEN = 60
+VIDEO_DIR = os.environ.get("VIDEO_DIR", "/media/usb" if not IS_RAILWAY else "videos")
 
-FRAGEN = [
-    {
-        "video": "oetscher.mp4",
-        "frage": "Welcher Berg ist das?",
-        "antworten": ["Ötscher", "Luxemburg", "Dachstein", "Bad Aussee"],
-        "richtig": "Ötscher"
-    },
-    {
-        "video": "dachstein.mp4",
-        "frage": "Welcher Berg ist das?",
-        "antworten": ["Ötscher", "Luxemburg", "Dachstein", "Bad Aussee"],
-        "richtig": "Dachstein"
-    },
-    {
-        "video": "schneeberg.mp4",
-        "frage": "Welcher Berg ist das?",
-        "antworten": ["Schneeberg", "Rax", "Hochschwab", "Grimming"],
-        "richtig": "Schneeberg"
-    },
-    {
-        "video": "grossglockner.mp4",
-        "frage": "Welcher Berg ist das?",
-        "antworten": ["Großglockner", "Wildspitze", "Watzmann", "Zugspitze"],
-        "richtig": "Großglockner"
-    },
-    {
-        "video": "traunstein.mp4",
-        "frage": "Welcher Berg ist das?",
-        "antworten": ["Traunstein", "Schafberg", "Feuerkogel", "Katrin"],
-        "richtig": "Traunstein"
-    }
-]
+# Fragen werden automatisch aus Videos generiert
+FRAGEN = []
+
+def lade_videos_und_generiere_fragen():
+    """Scannt Video-Verzeichnis und generiert Fragen aus Dateinamen"""
+    global FRAGEN
+    FRAGEN = []
+    
+    if IS_RAILWAY:
+        # Auf Railway: Beispiel-Fragen für Demo
+        FRAGEN = [
+            {
+                "video": "demo.mp4",
+                "frage": "Was ist hier zu sehen?",
+                "antworten": ["Demo Video", "Test", "Beispiel", "Probe"],
+                "richtig": "Demo Video"
+            }
+        ]
+        print("⚠️  Railway-Modus: Verwende Demo-Fragen (keine Videos)")
+        return
+    
+    if not os.path.exists(VIDEO_DIR):
+        print(f"⚠️  Video-Verzeichnis nicht gefunden: {VIDEO_DIR}")
+        return
+    
+    # Alle .mp4 Dateien finden
+    video_dateien = []
+    for datei in os.listdir(VIDEO_DIR):
+        if datei.lower().endswith('.mp4'):
+            video_dateien.append(datei)
+    
+    if not video_dateien:
+        print(f"⚠️  Keine Videos gefunden in {VIDEO_DIR}")
+        return
+    
+    print(f"📹 Gefundene Videos: {len(video_dateien)}")
+    
+    # Sammle alle Antworten (Dateinamen ohne .mp4)
+    alle_antworten = [os.path.splitext(v)[0] for v in video_dateien]
+    
+    # Generiere Fragen
+    for video_datei in video_dateien:
+        # Richtige Antwort = Dateiname ohne Extension
+        richtige_antwort = os.path.splitext(video_datei)[0]
+        
+        # Wähle 3 falsche Antworten aus den anderen Videos
+        falsche_antworten = [a for a in alle_antworten if a != richtige_antwort]
+        import random
+        if len(falsche_antworten) >= 3:
+            falsche_antworten = random.sample(falsche_antworten, 3)
+        else:
+            # Wenn weniger als 4 Videos, füge Dummy-Antworten hinzu
+            while len(falsche_antworten) < 3:
+                falsche_antworten.append(f"Unbekannt {len(falsche_antworten) + 1}")
+        
+        # Mische Antworten
+        antworten = [richtige_antwort] + falsche_antworten
+        random.shuffle(antworten)
+        
+        frage = {
+            "video": video_datei,
+            "frage": "Was ist hier zu sehen?",
+            "antworten": antworten,
+            "richtig": richtige_antwort
+        }
+        
+        FRAGEN.append(frage)
+        print(f"   ✓ {video_datei} → Richtige Antwort: {richtige_antwort}")
+    
+    # Mische Fragen-Reihenfolge
+    random.shuffle(FRAGEN)
+    print(f"✅ {len(FRAGEN)} Fragen generiert")
 
 # Globaler Spielstatus
 spiel_status = {
@@ -146,7 +188,7 @@ def spiele_video(video_datei):
         # Sende Event an Raspberry Pi Client
         socketio.emit('video_abspielen', {'video': video_datei})
         return
-    video_pfad = os.path.join("videos", video_datei)
+    video_pfad = os.path.join(VIDEO_DIR, video_datei)
     if not os.path.exists(video_pfad):
         print(f"Video nicht gefunden: {video_pfad}")
         return
@@ -337,6 +379,8 @@ def handle_spiel_starten():
 
 if __name__ == '__main__':
     init_db()
+    lade_videos_und_generiere_fragen()
     print(f"Quiz-App startet auf Port {PORT}")
     print(f"Railway-Modus: {IS_RAILWAY}")
+    print(f"Anzahl Fragen: {len(FRAGEN)}")
     socketio.run(app, host='0.0.0.0', port=PORT, debug=True, allow_unsafe_werkzeug=True)

@@ -19,13 +19,20 @@ echo "Installiere Python Dependencies..."
 pip3 install python-socketio[client]
 
 # Video-Verzeichnis erstellen
-VIDEO_DIR="/home/pi/quiz-videos"
+VIDEO_DIR="/media/usb"
 mkdir -p "$VIDEO_DIR"
 chown pi:pi "$VIDEO_DIR"
 
 echo ""
-echo "Video-Verzeichnis erstellt: $VIDEO_DIR"
-echo "Lege deine Videos dort ab (z.B. video1.mp4, video2.mp4, ...)"
+echo "Video-Verzeichnis: $VIDEO_DIR"
+echo ""
+echo "WICHTIG: Stecke einen USB-Stick mit Videos ein!"
+echo "Der USB-Stick wird automatisch unter /media/usb oder /media/pi/... gemountet"
+echo ""
+echo "Video-Benennung:"
+echo "  - Dateiname = Richtige Antwort"
+echo "  - Beispiel: Ötscher.mp4 → Antwort: Ötscher"
+echo "  - Frage ist immer: 'Was ist hier zu sehen?'"
 echo ""
 
 # Systemd Service erstellen
