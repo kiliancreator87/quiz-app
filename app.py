@@ -131,6 +131,8 @@ def berechne_rangliste():
 
 def spiele_video(video_datei):
     if IS_RAILWAY:
+        # Sende Event an Raspberry Pi Client
+        socketio.emit('video_abspielen', {'video': video_datei})
         return
     video_pfad = os.path.join("videos", video_datei)
     if not os.path.exists(video_pfad):
@@ -256,7 +258,8 @@ def naechste_frage_starten():
         socketio.emit('neue_frage', {
             'frage_nr': frage_nr,
             'frage': frage_data["frage"],
-            'antworten': frage_data["antworten"]
+            'antworten': frage_data["antworten"],
+            'video': frage_data["video"]
         })
 
 def countdown_und_reset():
@@ -312,7 +315,8 @@ def handle_spiel_starten():
         emit('spiel_gestartet', {
             'frage_nr': 0,
             'frage': frage_data["frage"],
-            'antworten': frage_data["antworten"]
+            'antworten': frage_data["antworten"],
+            'video': frage_data["video"]
         }, broadcast=True)
 
 if __name__ == '__main__':
