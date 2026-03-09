@@ -53,12 +53,16 @@ FRAGEN = [
     }
 ]
 
-# Globaler Spielstatus
+# Globaler Spielstatus und Spieler-Speicher
 spiel_status = {
     "phase": "warten",  # warten, spielen, ergebnis
     "aktuelle_frage": 0,
     "spieler_count": 0
 }
+
+# In-Memory Speicher für Railway (da SQLite nicht persistent ist)
+spieler_store = {}  # {device_id: display_name}
+antworten_store = []  # [{spieler_name, frage_nr, antwort, richtig, zeitpunkt}]
 
 # Datenbank-Pfad (In-Memory für Railway, File für lokal)
 DB_PATH = ':memory:' if IS_RAILWAY else 'quiz.db'
@@ -99,36 +103,64 @@ def init_db():
         conn.close()
 
 def reset_db():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('DELETE FROM spieler')
-    c.execute('DELETE FROM antworten')
-    conn.commit()
-    if not IS_RAILWAY:
+    global spieler_store, antworten_store
+    if IS_RAILWAY:
+        spieler_store = {}
+        antworten_store = []
+    else:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('DELETE FROM spieler')
+        c.execute('DELETE FROM antworten')
+        conn.commit()
         conn.close()
+    
     spiel_status["phase"] = "warten"
     spiel_status["aktuelle_frage"] = 0
     spiel_status["spieler_count"] = 0
 
 def get_spieler_count():
+    if IS_RAILWAY:
+        return len(spieler_store)
+    
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM spieler')
     count = c.fetchone()[0]
-    if not IS_RAILWAY:
-        conn.close()
+    conn.close()
     return count
 
 def get_antworten_count(frage_nr):
+    if IS_RAILWAY:
+        return len([a for a in antworten_store if a['frage_nr'] == frage_nr])
+    
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM antworten WHERE frage_nr = ?', (frage_nr,))
     count = c.fetchone()[0]
-    if not IS_RAILWAY:
-        conn.close()
+    conn.close()
     return count
 
 def berechne_rangliste():
+    if IS_RAILWAY:
+        # Berechne aus antworten_store
+        spieler_punkte = {}
+        for antwort in antworten_store:
+            spieler = antwort['spieler_name']
+            if spieler not in spieler_punkte:
+                spieler_punkte[spieler] = {'punkte': 0, 'gesamt': 0}
+            spieler_punkte[spieler]['gesamt'] += 1
+            if antwort['richtig']:
+                spieler_punkte[spieler]['punkte'] += 1
+        
+        rangliste = []
+        for spieler, stats in spieler_punkte.items():
+            display_name = spieler_store.get(spieler, spieler)
+            rangliste.append((display_name, stats['punkte'], stats['gesamt']))
+        
+        rangliste.sort(key=lambda x: (-x[1], x[0]))
+        return rangliste
+    
     conn = get_db()
     c = conn.cursor()
     c.execute('''SELECT 
@@ -140,8 +172,7 @@ def berechne_rangliste():
                  GROUP BY a.spieler_name 
                  ORDER BY punkte DESC, name ASC''')
     rangliste = c.fetchall()
-    if not IS_RAILWAY:
-        conn.close()
+    conn.close()
     return rangliste
 
 def spiele_video(video_datei):
@@ -174,43 +205,46 @@ def anmeldung():
 
 @app.route('/anmelden', methods=['POST'])
 def anmelden():
+    global spieler_store
+    
     name = request.form.get('name', '').strip()
     device_id = request.form.get('device_id', '').strip()
     
     if not name:
         return redirect(url_for('anmeldung'))
     
-    # Verwende device_id als eindeutigen Schlüssel, speichere aber den Namen für Anzeige
+    # Verwende device_id als eindeutigen Schlüssel
     if not device_id:
-        # Fallback: generiere ID aus Name + Timestamp
         device_id = f"{name}_{int(time.time() * 1000)}"
     
-    conn = get_db()
-    c = conn.cursor()
-    try:
-        # Prüfe ob Device schon existiert
-        c.execute('SELECT id FROM spieler WHERE name = ?', (device_id,))
-        existing = c.fetchone()
-        
-        if existing:
-            # Update display_name
-            c.execute('UPDATE spieler SET display_name = ? WHERE name = ?', (name, device_id))
-        else:
-            # Neues Device registrieren
-            c.execute('INSERT INTO spieler (name, display_name) VALUES (?, ?)', (device_id, name))
-        
-        conn.commit()
-        spiel_status["spieler_count"] = get_spieler_count()
+    if IS_RAILWAY:
+        # Speichere in Memory
+        spieler_store[device_id] = name
+        spiel_status["spieler_count"] = len(spieler_store)
         socketio.emit('spieler_update', {'count': spiel_status["spieler_count"]})
-    except Exception as e:
-        print(f"Fehler bei Anmeldung: {e}")
-    finally:
-        if not IS_RAILWAY:
+    else:
+        # Speichere in DB
+        conn = get_db()
+        c = conn.cursor()
+        try:
+            c.execute('SELECT id FROM spieler WHERE name = ?', (device_id,))
+            existing = c.fetchone()
+            
+            if existing:
+                c.execute('UPDATE spieler SET display_name = ? WHERE name = ?', (name, device_id))
+            else:
+                c.execute('INSERT INTO spieler (name, display_name) VALUES (?, ?)', (device_id, name))
+            
+            conn.commit()
+            spiel_status["spieler_count"] = get_spieler_count()
+            socketio.emit('spieler_update', {'count': spiel_status["spieler_count"]})
+        except Exception as e:
+            print(f"Fehler bei Anmeldung: {e}")
+        finally:
             conn.close()
     
-    # Speichere device_id und display_name in Session/Cookie
     response = redirect(url_for('warten'))
-    response.set_cookie('device_id', device_id, max_age=86400)  # 24h
+    response.set_cookie('device_id', device_id, max_age=86400)
     response.set_cookie('display_name', name, max_age=86400)
     return response
 
@@ -236,6 +270,8 @@ def frage():
 
 @app.route('/antworten', methods=['POST'])
 def antworten():
+    global antworten_store
+    
     spieler_name = request.form.get('spieler_name')
     frage_nr = int(request.form.get('frage_nr'))
     antwort = request.form.get('antwort')
@@ -246,18 +282,34 @@ def antworten():
     frage_data = FRAGEN[frage_nr]
     richtig = (antwort == frage_data["richtig"])
     
-    conn = get_db()
-    c = conn.cursor()
-    try:
-        c.execute('''INSERT INTO antworten (spieler_name, frage_nr, antwort, richtig)
-                     VALUES (?, ?, ?, ?)''', (spieler_name, frage_nr, antwort, richtig))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        if not IS_RAILWAY:
+    if IS_RAILWAY:
+        # Prüfe ob schon geantwortet
+        bereits_geantwortet = any(
+            a['spieler_name'] == spieler_name and a['frage_nr'] == frage_nr 
+            for a in antworten_store
+        )
+        if bereits_geantwortet:
+            return jsonify({'error': 'Bereits geantwortet'}), 400
+        
+        # Speichere Antwort
+        antworten_store.append({
+            'spieler_name': spieler_name,
+            'frage_nr': frage_nr,
+            'antwort': antwort,
+            'richtig': richtig,
+            'zeitpunkt': time.time()
+        })
+    else:
+        conn = get_db()
+        c = conn.cursor()
+        try:
+            c.execute('''INSERT INTO antworten (spieler_name, frage_nr, antwort, richtig)
+                         VALUES (?, ?, ?, ?)''', (spieler_name, frage_nr, antwort, richtig))
+            conn.commit()
+        except sqlite3.IntegrityError:
             conn.close()
-        return jsonify({'error': 'Bereits geantwortet'}), 400
-    finally:
-        if not IS_RAILWAY:
+            return jsonify({'error': 'Bereits geantwortet'}), 400
+        finally:
             conn.close()
     
     # Prüfen ob alle geantwortet haben
