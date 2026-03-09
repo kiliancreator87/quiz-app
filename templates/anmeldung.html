@@ -13,11 +13,38 @@
         <div class="card">
             <h2>Willkommen!</h2>
             <p>Gib deinen Namen ein um mitzuspielen:</p>
-            <form action="/anmelden" method="POST">
-                <input type="text" name="name" placeholder="Dein Name" required autofocus>
+            <form action="/anmelden" method="POST" id="anmelde-form">
+                <input type="text" name="name" id="name-input" placeholder="Dein Name" required autofocus>
+                <input type="hidden" name="device_id" id="device-id">
                 <button type="submit" class="btn-primary">Beitreten</button>
             </form>
         </div>
     </div>
+    
+    <script>
+        // Eindeutige Device-ID generieren oder aus localStorage holen
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('quiz_device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('quiz_device_id', deviceId);
+            }
+            return deviceId;
+        }
+        
+        document.getElementById('device-id').value = getDeviceId();
+        
+        // Namen aus localStorage vorausfüllen falls vorhanden
+        const savedName = localStorage.getItem('quiz_player_name');
+        if (savedName) {
+            document.getElementById('name-input').value = savedName;
+        }
+        
+        // Namen speichern beim Absenden
+        document.getElementById('anmelde-form').addEventListener('submit', function() {
+            const name = document.getElementById('name-input').value;
+            localStorage.setItem('quiz_player_name', name);
+        });
+    </script>
 </body>
 </html>

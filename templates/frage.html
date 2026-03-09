@@ -44,13 +44,22 @@
         const frageCard = document.getElementById('frage-card');
         const feedbackCard = document.getElementById('feedback');
         
+        // Device ID aus Cookie holen
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
-            formData.append('spieler_name', localStorage.getItem('spieler_name') || prompt('Dein Name:'));
-            formData.append('frage_nr', {{ frage_nr - 1 }});
             
-            localStorage.setItem('spieler_name', formData.get('spieler_name'));
+            // Verwende device_id aus Cookie
+            const deviceId = getCookie('device_id') || getDeviceId();
+            formData.append('spieler_name', deviceId);
+            formData.append('frage_nr', {{ frage_nr - 1 }});
             
             const response = await fetch('/antworten', {
                 method: 'POST',
@@ -72,6 +81,15 @@
                 document.getElementById('feedback-text').textContent = 'Richtige Antwort: ' + result.korrekte_antwort;
             }
         });
+        
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('quiz_device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('quiz_device_id', deviceId);
+            }
+            return deviceId;
+        }
 
         socket.on('neue_frage', () => {
             window.location.reload();
