@@ -19,7 +19,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 PORT = int(os.environ.get("PORT", 8080))
 IS_RAILWAY = os.environ.get("RAILWAY_ENVIRONMENT") is not None
 DATABASE_URL = os.environ.get("DATABASE_URL")
-ERGEBNIS_ANZEIGE_SEKUNDEN = 60
+ERGEBNIS_ANZEIGE_SEKUNDEN = 20
 
 FRAGEN = [
     {
@@ -316,6 +316,7 @@ def countdown_und_reset():
     time.sleep(ERGEBNIS_ANZEIGE_SEKUNDEN)
     reset_db()
     socketio.emit('reset', {})
+    print("🔄 Automatischer Reset durchgeführt - Datenbank geleert")
 
 @app.route('/ergebnis')
 def ergebnis():

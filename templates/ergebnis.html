@@ -13,7 +13,7 @@
         <h1 class="title">RANGLISTE</h1>
         
         <div class="countdown">
-            Neues Spiel in <span id="countdown">60</span> Sekunden
+            Neues Spiel in <span id="countdown">20</span> Sekunden
         </div>
 
         <div class="card rangliste">
@@ -32,7 +32,7 @@
 
     <script>
         const socket = io();
-        let countdownValue = 60;
+        let countdownValue = 20;
         const countdownEl = document.getElementById('countdown');
 
         socket.on('countdown_start', (data) => {
